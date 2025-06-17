@@ -1,16 +1,16 @@
 #!/bin/bash
 
 clear
-echo "======== SPM Phishing Framework (Education Only) ========"
+echo "======== SPM Phishing Framework (Localhost Mode) ========"
 echo "[*] Choose a phishing template to launch:"
 echo
 
-templates_dir="./templates"
+TEMPLATES_DIR="./templates"
 i=1
 declare -A options
 
-# List all directories under templates/
-for dir in "$templates_dir"/*/; do
+# List phishing templates
+for dir in "$TEMPLATES_DIR"/*/; do
     name=$(basename "$dir")
     echo "[$i] $name"
     options[$i]="$name"
@@ -19,7 +19,6 @@ done
 
 echo
 read -p "Enter the number: " choice
-
 selected="${options[$choice]}"
 
 if [[ -z "$selected" ]]; then
@@ -27,14 +26,24 @@ if [[ -z "$selected" ]]; then
     exit 1
 fi
 
-echo "[*] Launching PHP server for '$selected' phishing page..."
-cd "$templates_dir/$selected"
-php -S 127.0.0.1:8080 &>/dev/null &
-server_pid=$!
+echo "[*] Launching '$selected' phishing template on http://127.0.0.1:8080..."
+cd "$TEMPLATES_DIR/$selected" || exit 1
+php -S 127.0.0.1:8080 &
+php_pid=$!
+cd - > /dev/null || exit 1
 
-sleep 2
-echo "[*] Open http://127.0.0.1:8080 in your browser"
+# Confirm server is live
+for i in {1..10}; do
+  if curl -s http://127.0.0.1:8080 > /dev/null; then
+    echo "[+] ✅ Server is live at http://127.0.0.1:8080"
+    break
+  fi
+  echo "[*] Waiting for server... ($i/10)"
+  sleep 1
+done
 
+echo
 read -p "[*] Press ENTER to stop the server..."
 
-kill $server_pid
+kill $php_pid
+
